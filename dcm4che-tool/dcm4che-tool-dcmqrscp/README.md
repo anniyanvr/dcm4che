@@ -5,6 +5,9 @@ usage: dcmqrscp [options] -b [<aet>[@<ip>]:]<port> --dicomdir
 The dcmqrscp application implements a simple image archive.
 -
 Options:
+    --accept <aet>                      One ore more AE Title(s) that SCP
+                                        should accept. By default SCP
+                                        accepts any calling AE title.
     --accept-timeout <ms>               timeout in ms for receiving
                                         A-ASSOCIATE-AC, no timeout by
                                         default
@@ -221,6 +224,12 @@ Options:
                                         specified Cipher Suite. Multiple
                                         Cipher Suites may be enabled by
                                         multiple --tls-cipher options
+    --tls-eia-https                     enable server endpoint
+                                        identification according RFC 2818:
+                                        HTTP Over TLS
+    --tls-eia-ldaps                     enable server endpoint
+                                        identification according RFC 2830:
+                                        LDAP Extension for TLS
     --tls-noauth                        disable client authentification
                                         for TLS
     --tls-null                          enable TLS connection without

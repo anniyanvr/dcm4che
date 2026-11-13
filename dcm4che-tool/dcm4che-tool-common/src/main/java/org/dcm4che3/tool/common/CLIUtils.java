@@ -48,12 +48,14 @@ import org.dcm4che3.net.pdu.UserIdentityRQ;
 import org.dcm4che3.util.SafeClose;
 import org.dcm4che3.util.StreamUtils;
 import org.dcm4che3.util.StringUtils;
+import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.text.MessageFormat;
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.ResourceBundle;
 
@@ -77,6 +79,15 @@ public class CLIUtils {
                 .argName("aet[@ip][:port]")
                 .desc(
                         MessageFormat.format(rb.getString("bind"), defAET))
+                .longOpt("bind")
+                .build());
+    }
+
+    public static void addBindClientOption(Options opts, String defAET) {
+        opts.addOption(Option.builder("b")
+                .hasArg()
+                .argName("aet[@ip]")
+                .desc(MessageFormat.format(rb.getString("bind-client"), defAET))
                 .longOpt("bind")
                 .build());
     }
@@ -187,6 +198,15 @@ public class CLIUtils {
         addSocketOptions(opts);
         addTLSOptions(opts);
     }
+    
+    public static void addAcceptedCallingAETs(Options opts) {
+        opts.addOption(Option.builder()
+                .hasArgs()
+                .argName("aet")
+                .desc(rb.getString("accepted-calling-aets"))
+                .longOpt("accept")
+                .build());
+    }
 
     public static void addRequestTimeoutOption(Options opts) {
         opts.addOption(Option.builder()
@@ -289,6 +309,8 @@ public class CLIUtils {
         opts.addOption(null, "tls13", false, rb.getString("tls13"));
         opts.addOption(null, "ssl3", false, rb.getString("ssl3"));
         opts.addOption(null, "ssl2Hello", false, rb.getString("ssl2Hello"));
+        opts.addOption(null, "tls-eia-https", false, rb.getString("tls-eia-https"));
+        opts.addOption(null, "tls-eia-ldaps", false, rb.getString("tls-eia-ldaps"));
         opts.addOption(null, "tls-noauth", false, rb.getString("tls-noauth"));
         opts.addOption(Option.builder()
                 .hasArg()
@@ -477,7 +499,7 @@ public class CLIUtils {
                         ? Priority.LOW
                         : Priority.NORMAL;
     }
-
+    
     public static int getIntOption(CommandLine cl, String opt, int defVal) {
         String optVal = cl.getOptionValue(opt);
         if (optVal == null)
@@ -540,6 +562,14 @@ public class CLIUtils {
         conn.setTcpNoDelay(!cl.hasOption("tcp-delay"));
         configureTLS(conn, cl);
     }
+    
+    public static void configureAcceptedCallingAETitles(ApplicationEntity ae, CommandLine cl, Logger log) {
+        String[] aets = cl.getOptionValues("accept");
+        if (aets != null) {
+            ae.setAcceptedCallingAETitles(aets);
+            log.info("Accepted Calling AE titles are {}.", Arrays.toString(aets));
+        }
+    }
 
     public static boolean configureTLSCipher(Connection conn, CommandLine cl) throws ParseException {
         if (cl.hasOption("tls"))
@@ -580,6 +610,11 @@ public class CLIUtils {
             conn.setTlsProtocols("SSLv2Hello", "SSLv3", "TLSv1", "TLSv1.1", "TLSv1.2");
         else if (cl.hasOption("tls-protocol"))
             conn.setTlsProtocols(cl.getOptionValues("tls-protocol"));
+
+        if (cl.hasOption("tls-eia-https"))
+            conn.setTlsEndpointIdentificationAlgorithm(Connection.EndpointIdentificationAlgorithm.HTTPS);
+        else if (cl.hasOption("tls-eia-ldaps"))
+            conn.setTlsEndpointIdentificationAlgorithm(Connection.EndpointIdentificationAlgorithm.LDAPS);
 
         conn.setTlsNeedClientAuth(!cl.hasOption("tls-noauth"));
 
@@ -663,7 +698,7 @@ public class CLIUtils {
 
     public static int toTag(String tagOrKeyword) {
         try {
-            return Integer.parseInt(tagOrKeyword, 16);
+            return Integer.parseUnsignedInt(tagOrKeyword, 16);
         } catch (IllegalArgumentException e) {
             int tag = ElementDictionary.tagForKeyword(tagOrKeyword, null);
             if (tag == -1)

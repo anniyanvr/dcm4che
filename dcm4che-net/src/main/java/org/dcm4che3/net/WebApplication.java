@@ -58,6 +58,7 @@ public class WebApplication {
         QIDO_RS,
         UPS_RS,
         MWL_RS,
+        MPPS_RS,
         QIDO_COUNT,
         DCM4CHEE_ARC,
         DCM4CHEE_ARC_AET,
@@ -68,9 +69,15 @@ public class WebApplication {
         MOVE_MATCHING,
         UPS_MATCHING,
         ELASTICSEARCH,
+        PROMETHEUS,
+        GRAFANA,
+        DOCUMENTATION,
         XDS_RS,
         AGFA_BLOB,
-        J4C_ROUTER
+        J4C_ROUTER,
+        FHIR,
+        AI_CHAT,
+        WORKFLOW_MANAGER
     }
 
     private Device device;
@@ -198,7 +205,7 @@ public class WebApplication {
         return getServiceURL(firstInstalledConnection());
     }
 
-    private Connection firstInstalledConnection() {
+    public Connection firstInstalledConnection() {
         for (Connection conn : conns) {
             if (conn.isInstalled())
                 return conn;

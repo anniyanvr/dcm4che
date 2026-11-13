@@ -55,11 +55,12 @@ import java.util.*;
 
 /**
  * @author Gunter Zeilinger <gunterze@gmail.com>
- *
+ * @author Vrinda Nayak <vrinda.nayak@j4care.com>
  */
 public class HL7Application implements Serializable {
 
     private static final long serialVersionUID = -1765110968524548056L;
+    public static final int[] DEFAULT_HL7_REQUIRED_MSH_FIELDS = { 3, 4, 5, 6, 7, 9, 10, 11, 12 };
 
     private Device device;
     private String name;
@@ -67,6 +68,7 @@ public class HL7Application implements Serializable {
     private String hl7SendingCharacterSet = "ASCII";
     private Boolean installed;
     private String description;
+    private int[] optionalMSHFields = {};
     private String[] applicationClusters = {};
 
     private final LinkedHashSet<String> acceptedSendingApplications =
@@ -180,6 +182,14 @@ public class HL7Application implements Serializable {
         this.description = description;
     }
 
+    public int[] getOptionalMSHFields() {
+        return optionalMSHFields;
+    }
+
+    public void setOptionalMSHFields(int... optionalMSHFields) {
+        this.optionalMSHFields = optionalMSHFields;
+    }
+
     public String[] getApplicationClusters() {
         return applicationClusters;
     }
@@ -240,56 +250,87 @@ public class HL7Application implements Serializable {
 
     UnparsedHL7Message onMessage(Connection conn, Socket s, UnparsedHL7Message msg) throws HL7Exception {
         HL7Segment msh = msg.msh();
-        if (!(isInstalled() && conns.contains(conn)))
-            throw new HL7Exception(
-                    new ERRSegment(msh)
-                            .setHL7ErrorCode(ERRSegment.TableValueNotFound)
-                            .setErrorLocation(ERRSegment.UnknownReceivingApplication)
-                            .setUserMessage("Receiving Application not recognized"));
+        validateMSH(msh);
+        HL7MessageListener listener = getHL7MessageListener();
+        if (listener == null)
+            throw new HL7Exception(new ERRSegment(msh)
+                    .setHL7ErrorCode(ERRSegment.APPLICATION_INTERNAL_ERROR)
+                    .setUserMessage("No HL7 Message Listener configured"));
+        return listener.onMessage(this, conn, s, msg);
+    }
+
+    private void validateMSH(HL7Segment msh) throws HL7Exception {
+        String[] errorLocations = {
+                ERRSegment.SENDING_APPLICATION,     // MSH-3
+                ERRSegment.SENDING_FACILITY,        // MSH-4
+                ERRSegment.RECEIVING_APPLICATION,   // MSH-5
+                ERRSegment.RECEIVING_FACILITY,      // MSH-6
+                ERRSegment.MESSAGE_DATETIME,        // MSH-7
+                null,                               // MSH-8
+                ERRSegment.MESSAGE_CODE,            // MSH-9
+                ERRSegment.MESSAGE_CONTROL_ID,      // MSH-10
+                ERRSegment.MESSAGE_PROCESSING_ID,   // MSH-11
+                ERRSegment.MESSAGE_VERSION_ID,      // MSH-12
+        };
+        String[] userMsg = {
+                "Missing Sending Application",
+                "Missing Sending Facility",
+                "Missing Receiving Application",
+                "Missing Receiving Facility",
+                "Missing Date/Time of Message",
+                null,
+                "Missing Message Type",
+                "Missing Message Control ID",
+                "Missing Processing ID",
+                "Missing Version ID"
+        };
+        for (int hl7OptionalMSHField : optionalMSHFields) {
+            try {
+                errorLocations[hl7OptionalMSHField-3] = null;
+            } catch (IndexOutOfBoundsException ignore) {
+            }
+        }
+        errorLocations[6] = ERRSegment.MESSAGE_CODE; // never optional
+        for (int i = 0; i < errorLocations.length; i++) {
+            if (errorLocations[i] != null)
+                if (msh.getField(i+2, null) == null)
+                    throw new HL7Exception(
+                            new ERRSegment(msh)
+                                    .setHL7ErrorCode(ERRSegment.REQUIRED_FIELD_MISSING)
+                                    .setErrorLocation(errorLocations[i])
+                                    .setUserMessage(userMsg[i]));
+        }
         if (!(acceptedSendingApplications.isEmpty()
                 || acceptedSendingApplications.contains(msh.getSendingApplicationWithFacility())))
             throw new HL7Exception(
                     new ERRSegment(msh)
-                            .setHL7ErrorCode(ERRSegment.TableValueNotFound)
-                            .setErrorLocation(ERRSegment.UnknownSendingApplication)
-                            .setUserMessage("Sending Application not recognized"));
+                            .setHL7ErrorCode(ERRSegment.TABLE_VALUE_NOT_FOUND)
+                            .setErrorLocation(ERRSegment.SENDING_APPLICATION)
+                            .setUserMessage("Sending Application and/or Facility not recognized"));
         String messageType = msh.getMessageType();
-        if (messageType.equals(""))
-            throw new HL7Exception(
-                    new ERRSegment(msh)
-                            .setHL7ErrorCode(ERRSegment.RequiredFieldMissing)
-                            .setErrorLocation(ERRSegment.MissingMessageType)
-                            .setUserMessage("Missing Message Type"));
-
         if (!(acceptedMessageTypes.contains("*")
-                || acceptedMessageTypes.contains(messageType)))
+                || acceptedMessageTypes.contains(messageType))) {
+            if (unsupportedMessageCode(messageType.substring(0, 3)))
+                throw new HL7Exception(
+                        new ERRSegment(msh)
+                                .setHL7ErrorCode(ERRSegment.UNSUPPORTED_MESSAGE_TYPE)
+                                .setErrorLocation(ERRSegment.MESSAGE_CODE)
+                                .setUserMessage("Message Type - Message Code not supported"));
+
             throw new HL7Exception(
                     new ERRSegment(msh)
-                            .setHL7ErrorCode(unsupportedMessageTypeOrEventCode(messageType.substring(0,3)))
-                            .setUserMessage("Message Type not supported"));
-
-        HL7MessageListener listener = getHL7MessageListener();
-        if (listener == null)
-            throw new HL7Exception(new ERRSegment(msh)
-                            .setHL7ErrorCode(ERRSegment.ApplicationInternalError)
-                            .setUserMessage("No HL7 Message Listener configured"));
-
-        if (msh.getMessageControlID() == null)
-            throw new HL7Exception(
-                new ERRSegment(msh)
-                    .setHL7ErrorCode(ERRSegment.RequiredFieldMissing)
-                    .setErrorLocation(ERRSegment.MissingMessageControlID)
-                    .setUserMessage("Missing Message Control ID"));
-
-        return listener.onMessage(this, conn, s, msg);
+                            .setHL7ErrorCode(ERRSegment.UNSUPPORTED_EVENT_CODE)
+                            .setErrorLocation(ERRSegment.TRIGGER_EVENT)
+                            .setUserMessage("Message Type - Trigger Event not supported"));
+        }
     }
 
-    private String unsupportedMessageTypeOrEventCode(String messageType) {
+    private boolean unsupportedMessageCode(String messageType) {
         for (String acceptedMessageType : acceptedMessageTypes) {
             if (acceptedMessageType.startsWith(messageType))
-                return ERRSegment.UnsupportedEventCode;
+                return false;
         }
-        return ERRSegment.UnsupportedMessageType;
+        return true;
     }
 
     public MLLPConnection connect(Connection remote)
@@ -388,6 +429,7 @@ public class HL7Application implements Serializable {
         applicationClusters = src.applicationClusters;
         hl7DefaultCharacterSet = src.hl7DefaultCharacterSet;
         hl7SendingCharacterSet = src.hl7SendingCharacterSet;
+        optionalMSHFields = src.optionalMSHFields;
         acceptedSendingApplications.clear();
         acceptedSendingApplications.addAll(src.acceptedSendingApplications);
         otherApplicationNames.clear();

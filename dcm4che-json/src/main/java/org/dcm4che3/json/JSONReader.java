@@ -38,25 +38,22 @@
 
 package org.dcm4che3.json;
 
+import jakarta.json.stream.JsonParser;
+import jakarta.json.stream.JsonParser.Event;
+import jakarta.json.stream.JsonParsingException;
 import org.dcm4che3.data.*;
 import org.dcm4che3.data.PersonName.Group;
-import org.dcm4che3.io.BulkDataCreator;
 import org.dcm4che3.util.Base64;
 import org.dcm4che3.util.TagUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.json.stream.JsonParser;
-import javax.json.stream.JsonParser.Event;
-import javax.json.stream.JsonParsingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
-import java.util.function.ToIntFunction;
 import java.util.function.ToLongFunction;
 
 /**
@@ -181,7 +178,8 @@ public class JSONReader {
                     try {
                         el.vr = VR.valueOf(valueString());
                     } catch (IllegalArgumentException e) {
-                        throw new JsonParsingException("Invalid vr: " + getString(), parser.getLocation());
+                        el.vr = ElementDictionary.getStandardElementDictionary().vrOf(tag);
+                        LOG.info("Invalid vr: '{}' at {} - treat as '{}'",getString(), parser.getLocation(), el.vr);
                     }
                     break;
                 case "Value":
@@ -203,9 +201,13 @@ public class JSONReader {
             }
         }
         expect(JsonParser.Event.END_OBJECT);
-        if (el.vr == null)
-            throw new JsonParsingException("Missing property: vr", parser.getLocation());
-
+        if (el.vr == null) {
+            el.vr = ElementDictionary.getStandardElementDictionary().vrOf(tag);
+            if (el.vr == null) {
+                el.vr = VR.UN;
+            }
+            LOG.info("Missing property: vr at {} - treat as '{}'", parser.getLocation(), el.vr);
+        }
         if (el.isEmpty())
             attrs.setNull(tag, el.vr);
         else if (el.bulkDataURI != null) {
@@ -268,6 +270,11 @@ public class JSONReader {
     private List<Object> readValues() {
         ArrayList<Object> list = new ArrayList<>();
         next();
+        if( this.event == Event.VALUE_STRING ) {
+            LOG.info("Missing value array at {} - treat as single value", parser.getLocation());
+            list.add(getString());
+            return list;
+        }
         expect(Event.START_ARRAY);
         while (next() != Event.END_ARRAY) {
             switch (event) {

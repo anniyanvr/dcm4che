@@ -172,6 +172,8 @@ public class Transcoder implements Closeable {
 
     private byte[] buffer;
 
+    private long encapsulatedPixelDataValueTotalLength;
+
     public Transcoder(File f) throws IOException {
         this(new DicomInputStream(f));
     }
@@ -315,12 +317,15 @@ public class Transcoder implements Closeable {
 
     private String adaptSuitableSyntax(String dstTsuid) {
         int bitsStored = imageDescriptor.getBitsStored();
-        if(bitsStored == 1 && imageDescriptor.getBitsAllocated() == 1) {
+        if (imageDescriptor.getBitsAllocated() == 1
+                && TransferSyntaxType.forUID(dstTsuid) != TransferSyntaxType.NATIVE) {
             return srcTransferSyntax;
         }
         switch (dstTsuid) {
             case UID.JPEGBaseline8Bit:
-                return bitsStored <= 8 ? dstTsuid : bitsStored <= 16 ? UID.JPEGLosslessSV1 : UID.ExplicitVRLittleEndian;
+                return bitsStored <= 8 ? dstTsuid
+                        : !imageDescriptor.isSigned() && bitsStored <= 12 ? UID.JPEGExtended12Bit
+                        : bitsStored <= 16 ? UID.JPEGLosslessSV1 : UID.ExplicitVRLittleEndian;
             case UID.JPEGExtended12Bit:
             case UID.JPEGSpectralSelectionNonHierarchical68:
             case UID.JPEGFullProgressionNonHierarchical1012:
@@ -332,8 +337,17 @@ public class Transcoder implements Closeable {
             case UID.JPEGLSNearLossless:
             case UID.JPEG2000Lossless:
             case UID.JPEG2000:
+            case UID.HTJ2KLossless:
+            case UID.HTJ2KLosslessRPCL:
+            case UID.HTJ2K:
                 return bitsStored <= 16 ? dstTsuid : UID.ExplicitVRLittleEndian;
-            default:
+            case UID.JPEGXLLossless:
+                return bitsStored <= 32 ? dstTsuid : UID.ExplicitVRLittleEndian;
+            case UID.JPEGXLJPEGRecompression:
+            case UID.JPEGXL:
+                return bitsStored <= 8  ? dstTsuid
+                        : bitsStored <= 32 ? UID.JPEGXLLossless : UID.ExplicitVRLittleEndian;
+          default:
                 return dstTsuid;
         }
     }
@@ -356,6 +370,10 @@ public class Transcoder implements Closeable {
      */
     public Attributes getFileMetaInformation() {
         return fileMetaInformation;
+    }
+
+    public long getEncapsulatedPixelDataValueTotalLength() {
+        return encapsulatedPixelDataValueTotalLength;
     }
 
     private void initDecompressor() {
@@ -423,13 +441,11 @@ public class Transcoder implements Closeable {
             verifier.dispose();
         if (closeInputStream)
             SafeClose.close(dis);
-        if (deleteBulkDataFiles)
+        if (closeOutputStream)
+            SafeClose.close(dos);
+        if (deleteBulkDataFiles) {
             for (File tmpFile : dis.getBulkDataFiles())
                 tmpFile.delete();
-        if (dos != null) {
-            dos.finish();
-            if (closeOutputStream)
-                dos.close();
         }
     }
 
@@ -447,6 +463,7 @@ public class Transcoder implements Closeable {
             writeDataset();
         } else
             dataset.writePostPixelDataTo(dos);
+        dos.finish();
     }
 
     private final DicomInputHandler dicomInputHandler = new DicomInputHandler() {
@@ -477,14 +494,19 @@ public class Transcoder implements Closeable {
         public void readValue(DicomInputStream dis, Fragments frags) throws IOException {
             if (dos == null) {
                 if (nullifyPixelData)
-                    StreamUtils.skipFully(dis, dis.length());
+                    StreamUtils.skipFully(dis, dis.unsignedLength());
                 else
                     dis.readValue(dis, frags);
             } else {
-                int length = dis.length();
-                dos.writeHeader(Tag.Item, null, length);
+                long length = dis.unsignedLength();
+                dos.writeHeader(Tag.Item, null, (int)(length + 1) & ~1);
                 StreamUtils.copy(dis, dos, length, buffer());
+                if ((length & 1) != 0) {
+                    LOG.info("Odd length of Pixel Data Fragment: {} - append NULL byte to ensure even length", length);
+                    dos.write(0);
+                }
             }
+            encapsulatedPixelDataValueTotalLength += dis.unsignedLength();
         }
 
         @Override
@@ -543,22 +565,27 @@ public class Transcoder implements Closeable {
     }
 
     private void copyPixelData() throws IOException {
-        int length = dis.length();
+        long length = dis.unsignedLength();
         writeDataset();
-        dos.writeHeader(Tag.PixelData, dis.vr(), length);
         if (length == -1) {
+            dos.writeHeader(Tag.PixelData, dis.vr(), -1);
             dis.readValue(dis, dataset);
             dos.writeHeader(Tag.SequenceDelimitationItem, null, 0);
         } else {
+            dos.writeHeader(Tag.PixelData, dis.vr(), (int) (length + 1) & ~1);
             if (dis.bigEndian() == dos.isBigEndian())
                 StreamUtils.copy(dis, dos, length, buffer());
             else
                 StreamUtils.copy(dis, dos, length, dis.vr().numEndianBytes(), buffer());
+            if ((length & 1) != 0) {
+                LOG.info("Odd length of Pixel Data: {} - append NULL byte to ensure even length", length);
+                dos.write(0);
+            }
         }
     }
 
     private void compressPixelData() throws IOException {
-        int padding = dis.length() - imageDescriptor.getLength();
+        int padding = (int) (dis.unsignedLength() - imageDescriptor.getLength());
         for (int i = 0; i < imageDescriptor.getFrames(); i++) {
             if (decompressor == null)
                 readFrame();
@@ -636,14 +663,13 @@ public class Transcoder implements Closeable {
                 dataset.setInt(Tag.PlanarConfiguration, VR.US, destTransferSyntaxType.getPlanarConfiguration());
             if (lossyCompression) {
                 dataset.setString(Tag.LossyImageCompression, VR.CS, "01");
-				if ("jpeg2000-cv".equals(compressorParam.formatName)) {
-					for (Property p : compressorParam.getImageWriteParams()) {
-						if ("compressionRatiofactor".equals(p.getName())) {
-							dataset.setFloat(Tag.LossyImageCompressionRatio, VR.DS, ((Double) p.getValue()).floatValue());
-							break;
-						}
-					}
-				}
+                try {
+                    dataset.setFloat(Tag.LossyImageCompressionRatio, VR.DS,
+                            ((Number) compressParam.getClass()
+                                    .getMethod("getCompressionRatiofactor")
+                                    .invoke(compressParam)).floatValue());
+                } catch (Exception ignore) {
+                }
             }
         }
     }

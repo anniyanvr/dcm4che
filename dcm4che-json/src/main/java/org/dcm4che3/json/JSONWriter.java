@@ -44,9 +44,8 @@ import java.util.Deque;
 import java.util.EnumMap;
 import java.util.function.LongFunction;
 
-import javax.json.JsonValue;
-import javax.json.stream.JsonGenerator;
-
+import jakarta.json.JsonValue;
+import jakarta.json.stream.JsonGenerator;
 import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.BulkData;
 import org.dcm4che3.data.Fragments;
@@ -220,7 +219,7 @@ public class JSONWriter implements DicomInputHandler {
             throws IOException {
         int tag = dis.tag();
         VR vr = dis.vr();
-        int len = dis.length();
+        long len = dis.unsignedLength();
         if (TagUtils.isGroupLength(tag)) {
             dis.readValue(dis, attrs);
         } else if (dis.isExcludeBulkData()) {
@@ -240,6 +239,7 @@ public class JSONWriter implements DicomInputHandler {
                     byte[] b = dis.readValue();
                     if (tag == Tag.TransferSyntaxUID
                             || tag == Tag.SpecificCharacterSet
+                            || tag == Tag.PixelRepresentation
                             || TagUtils.isPrivateCreator(tag))
                         attrs.setBytes(tag, vr, b);
                     writeValue(vr, b, dis.bigEndian(),

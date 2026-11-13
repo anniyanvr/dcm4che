@@ -49,16 +49,19 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.*;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.StringTokenizer;
 
 /**
  * @author Gunter Zeilinger (gunterze@protonmail.com)
+ * @author Itr Tert (itr.tert@gmail.com)
  */
 public class SpecificCharacterSet {
 
     private static final Logger LOG = LoggerFactory.getLogger(SpecificCharacterSet.class);
 
     public static final SpecificCharacterSet ASCII = new SpecificCharacterSet(new Codec[]{Codec.ISO_646});
+    public static final SpecificCharacterSet UTF8 = new SpecificCharacterSet(new Codec[]{Codec.UTF_8}, "ISO_IR 192");
 
     private static SpecificCharacterSet DEFAULT = ASCII;
     private static final ThreadLocal<SoftReference<Encoder>> cachedEncoder1 = new ThreadLocal<SoftReference<Encoder>>();
@@ -78,6 +81,7 @@ public class SpecificCharacterSet {
         ISO_8859_7(true, 0x2842, 0x2d46, 1),
         ISO_8859_8(true, 0x2842, 0x2d48, 1),
         ISO_8859_9(true, 0x2842, 0x2d4d, 1),
+        ISO_8859_15(true, 0x2842, 0x2d62, 1),
         JIS_X_201(true, 0x284a, 0x2949, 1) {
             @Override
             public String toText(String s) {
@@ -87,12 +91,12 @@ public class SpecificCharacterSet {
         TIS_620(true, 0x2842, 0x2d54, 1),
         JIS_X_208(false, 0x2442, 0, 1),
         JIS_X_212(false, 0x242844, 0, 2),
-        KS_X_1001(false, 0x2842, 0x242943, -1),
-        GB2312(false, 0x2842, 0x242941, -1),
+        KS_X_1001(false, 0, 0x242943, -1),
+        GB2312(false, 0, 0x242941, -1),
         UTF_8(true, 0, 0, -1),
         GB18030(false, 0, 0, -1);
 
-        private static final String[] charsetNames = resetCharsetNames(new String[18]);
+        private static final String[] charsetNames = resetCharsetNames(new String[19]);
         private final boolean containsASCII;
         private final int escSeq0;
         private final int escSeq1;
@@ -120,14 +124,15 @@ public class SpecificCharacterSet {
             charsetNames[7] = "ISO-8859-7";
             charsetNames[8] = "ISO-8859-8";
             charsetNames[9] = "ISO-8859-9";
-            charsetNames[10] = "JIS_X0201";
-            charsetNames[11] = "TIS-620";
-            charsetNames[12] = "x-JIS0208";
-            charsetNames[13] = "JIS_X0212-1990";
-            charsetNames[14] = "EUC-KR";
-            charsetNames[15] = "GB2312";
-            charsetNames[16] = "UTF-8";
-            charsetNames[17] = "GB18030";
+            charsetNames[10] = "ISO-8859-15";
+            charsetNames[11] = "JIS_X0201";
+            charsetNames[12] = "TIS-620";
+            charsetNames[13] = "x-JIS0208";
+            charsetNames[14] = "JIS_X0212-1990";
+            charsetNames[15] = "EUC-KR";
+            charsetNames[16] = "GB2312";
+            charsetNames[17] = "UTF-8";
+            charsetNames[18] = "GB18030";
             return charsetNames;
         }
 
@@ -171,6 +176,9 @@ public class SpecificCharacterSet {
                 case "ISO_IR 148":
                 case "ISO 2022 IR 148":
                     return Codec.ISO_8859_9;
+                case "ISO_IR 203":
+                case "ISO 2022 IR 203":
+                    return Codec.ISO_8859_15;
                 case "ISO_IR 13":
                 case "ISO 2022 IR 13":
                     return Codec.JIS_X_201;
@@ -241,6 +249,10 @@ public class SpecificCharacterSet {
         }
     }
 
+    private enum G0G1 {
+        G0, G1, Both
+    }
+
     private static final class Encoder {
         final Codec codec;
         final CharsetEncoder encoder;
@@ -251,7 +263,7 @@ public class SpecificCharacterSet {
         }
 
         public boolean encode(CharBuffer cb, ByteBuffer bb, int escSeq,
-                CodingErrorAction errorAction) {
+                G0G1 useRange, CodingErrorAction errorAction) {
             encoder.onMalformedInput(errorAction)
                     .onUnmappableCharacter(errorAction)
                     .reset();
@@ -259,12 +271,28 @@ public class SpecificCharacterSet {
             int bbmark = bb.position();
             try {
                 escSeq(bb, escSeq);
+                int graphicCharStart = bb.position();
                 CoderResult cr = encoder.encode(cb, bb, true);
                 if (!cr.isUnderflow())
                     cr.throwException();
                 cr = encoder.flush(bb);
                 if (!cr.isUnderflow())
                     cr.throwException();
+
+                if (useRange == G0G1.G0) {
+                    for (int i = graphicCharStart, end = bb.position(); i < end; ++i) {
+                        if (0 > bb.get(i)) {
+                            throw new CharacterCodingException();
+                        }
+                    }
+                } else if (useRange == G0G1.G1) {
+                    for (int i = graphicCharStart, end = bb.position(); i < end; ++i) {
+                        if (0 <= bb.get(i)) {
+                            throw new CharacterCodingException();
+                        }
+                    }
+                }
+                // if useRange == G0G1.Both, then do nothing
             } catch (CharacterCodingException x) {
                 SafeBuffer.position(cb, cbmark);
                 SafeBuffer.position(bb, bbmark);
@@ -305,14 +333,14 @@ public class SpecificCharacterSet {
             ByteBuffer bb = ByteBuffer.wrap(buf);
             // try to encode whole string value with character set specified
             // by value1 of (0008,0005) Specific Character Set
-            if (!enc1.encode(cb, bb, 0, CodingErrorAction.REPORT)) {
+            if (!enc1.encode(cb, bb, 0, G0G1.Both, CodingErrorAction.REPORT)) {
                 // split whole string value according VR specific delimiters
                 // and try to encode each component separately
                 Encoder[] encs = new Encoder[codecs.length];
                 encs[0] = enc1;
                 encs[1] = encoder(cachedEncoder2, codecs[1]);
                 StringTokenizer comps = new StringTokenizer(val, delimiters, true);
-                buf = new byte[2 * strlen + 4 * (comps.countTokens() + 1)];
+                buf = new byte[(2 + 4) * strlen];
                 bb = ByteBuffer.wrap(buf);
                 int[] cur = { 0, 0 };
                 while (comps.hasMoreTokens()) {
@@ -332,12 +360,12 @@ public class SpecificCharacterSet {
 
         private void encodeComponent(Encoder[] encs, CharBuffer cb, ByteBuffer bb, int[] cur) {
             // try to encode component with current active character of G1
-            if (codecs[cur[1]].getEscSeq1() != 0 && encs[cur[1]].encode(cb, bb, 0, CodingErrorAction.REPORT))
+            if (codecs[cur[1]].getEscSeq1() != 0 && encs[cur[1]].encode(cb, bb, 0, G0G1.G1, CodingErrorAction.REPORT))
                 return;
 
             // try to encode component with current active character set of G0, if different to G1
             if ((codecs[cur[1]].getEscSeq1() == 0 || codecs[cur[1]].getEscSeq0() != codecs[cur[0]].getEscSeq0())
-                    && encs[cur[0]].encode(cb, bb, 0, CodingErrorAction.REPORT))
+                    && encs[cur[0]].encode(cb, bb, 0, G0G1.G0, CodingErrorAction.REPORT))
                 return;
 
             int next = encs.length;
@@ -345,12 +373,13 @@ public class SpecificCharacterSet {
                 if (encs[next] == null)
                     encs[next] = new Encoder(codecs[next]);
                 if (codecs[next].getEscSeq1() != 0) {
-                    if (encs[next].encode(cb, bb, codecs[next].getEscSeq1(), CodingErrorAction.REPORT)) {
+                    if (encs[next].encode(cb, bb, codecs[next].getEscSeq1(), G0G1.G1, CodingErrorAction.REPORT)) {
                         cur[1] = next;
                         break;
                     }
-                } else {
-                    if (encs[next].encode(cb, bb, codecs[next].getEscSeq0(), CodingErrorAction.REPORT)) {
+                }
+                if (codecs[next].getEscSeq0() != 0) {
+                    if (encs[next].encode(cb, bb, codecs[next].getEscSeq0(), G0G1.G0, CodingErrorAction.REPORT)) {
                         cur[0] = next;
                         break;
                     }
@@ -384,7 +413,7 @@ public class SpecificCharacterSet {
         }
 
         @Override
-        public String decode(byte[] b) {
+        public String decode(byte[] b, String delimiters) {
             Codec[] codec = { codecs[0], codecs[0] };
             int g = 0;
             int off = 0;
@@ -459,6 +488,9 @@ public class SpecificCharacterSet {
                         case 0x2d4d:
                             switchCodec(codec, 1, Codec.ISO_8859_9);
                             break;
+                        case 0x2d62:
+                            switchCodec(codec, 1, Codec.ISO_8859_15);
+                            break;
                         case 0x2d54:
                             switchCodec(codec, 1, Codec.TIS_620);
                             break;
@@ -474,6 +506,8 @@ public class SpecificCharacterSet {
                         off = cur;
                         g = 1 - g;
                     }
+                    if (g == 0 && codec[g].containsASCII & delimiters.indexOf(b[cur]) >= 0)
+                        codec[0] = codec[1] = codecs[0];
                     int bytesPerChar = codec[g].getBytesPerChar();
                     cur += bytesPerChar > 0 ? bytesPerChar : b[cur] < 0 ? 2 : 1;
                 }
@@ -564,6 +598,8 @@ public class SpecificCharacterSet {
      *     <td>{@code ISO-8859-8}</td></tr>
      * <tr><td>{@code ISO_IR 148}</td>
      *     <td>{@code ISO-8859-9}</td></tr>
+     * <tr><td>{@code ISO_IR 203}</td>
+     *     <td>{@code ISO-8859-15}</td></tr>
      * <tr><td>{@code ISO_IR 13}</td>
      *     <td>{@code JIS_X0201}</td></tr>
      * <tr><td>{@code ISO_IR 166}</td>
@@ -572,7 +608,7 @@ public class SpecificCharacterSet {
      *     <td>{@code x-JIS0208}</td></tr>
      * <tr><td>{@code ISO 2022 IR 159}</td>
      *     <td>{@code JIS_X0212-1990}</td></tr>
-     * <tr><td>{@codeISO 2022 IR 149 }</td>
+     * <tr><td>{@code ISO 2022 IR 149 }</td>
      *     <td>{@code EUC-KR}</td></tr>
      * <tr><td>{@code ISO 2022 IR 58}</td>
      *     <td>{@code GB2312}</td></tr>
@@ -660,6 +696,9 @@ public class SpecificCharacterSet {
                 case "ISO 2022 IR 148":
                     codes[0] = "ISO_IR 148";
                     return true;
+                case "ISO 2022 IR 203":
+                    codes[0] = "ISO_IR 203";
+                    return true;
                 case "ISO 2022 IR 13":
                     codes[0] = "ISO_IR 13";
                     return true;
@@ -686,6 +725,7 @@ public class SpecificCharacterSet {
                     case "ISO_IR 126":
                     case "ISO_IR 138":
                     case "ISO_IR 148":
+                    case "ISO_IR 203":
                     case "ISO_IR 13":
                     case "ISO_IR 166":
                         if (results == codes) results = codes.clone();
@@ -743,11 +783,15 @@ public class SpecificCharacterSet {
         this.dicomCodes = codes;
     }
 
+    public String toString() {
+        return "SpecificCharacterSet" + Arrays.toString(dicomCodes);
+    }
+
     public byte[] encode(String val, String delimiters) {
         return codecs[0].encode(val);
     }
 
-    public String decode(byte[] val) {
+    public String decode(byte[] val, String delimiters) {
         return codecs[0].decode(val, 0, val.length);
     }
 
@@ -765,6 +809,26 @@ public class SpecificCharacterSet {
 
     public boolean contains(SpecificCharacterSet other) {
         return Arrays.equals(codecs, other.codecs) || (other.isASCII() || other == ASCII) && containsASCII();
+    }
+
+    public boolean containedByAll(Collection<SpecificCharacterSet> others) {
+        for (SpecificCharacterSet other : others) {
+            if (!other.contains(this)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static SpecificCharacterSet common(SpecificCharacterSet cs1, SpecificCharacterSet cs2) {
+        return cs1.contains(cs2) ? cs1 : cs2.contains(cs1) ? cs2 : SpecificCharacterSet.UTF8;
+    }
+
+    public static SpecificCharacterSet common(SpecificCharacterSet cs, Collection<SpecificCharacterSet> others) {
+        for (SpecificCharacterSet other : others) {
+            cs = common(cs, other);
+        }
+        return cs;
     }
 
     public String toText(String s) {

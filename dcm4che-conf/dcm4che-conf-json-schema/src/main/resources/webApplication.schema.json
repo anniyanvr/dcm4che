@@ -39,11 +39,14 @@
         "type": "string",
         "enum": [
           "QIDO_RS",
+          "AI_CHAT",
+          "DOCUMENTATION",
           "STOW_RS",
           "WADO_RS",
           "WADO_URI",
           "UPS_RS",
           "MWL_RS",
+          "MPPS_RS",
           "QIDO_COUNT",
           "DCM4CHEE_ARC",
           "DCM4CHEE_ARC_AET",
@@ -52,8 +55,15 @@
           "REJECT",
           "MOVE",
           "MOVE_MATCHING",
+          "UPS_MATCHING",
           "ELASTICSEARCH",
-          "XDS_RS"
+          "PROMETHEUS",
+          "GRAFANA",
+          "XDS_RS",
+          "AGFA_BLOB",
+          "J4C_ROUTER",
+          "FHIR",
+          "WORKFLOW_MANAGER"
         ]
       }
     },
@@ -78,8 +88,8 @@
       }
     },
     "dcmProperty": {
-      "title": "Property",
-      "description": "Property in format <name>=<value>. E.g.: roles=<accepted-user-role>[,...], IID_PATIENT_URL=http(s)://<viewer-host>:<viewer-port>/IHEInvokeImageDisplay?requestType=PATIENT&patientID={} or IID_STUDY_URL=http(s)://<viewer-host>:<viewer-port>/IHEInvokeImageDisplay?requestType=STUDY&studyUID={}",
+      "title": "Web Application Property",
+      "description": "Web application property in format <name>=<value>. Refer <a href=\"https://github.com/dcm4che/dcm4chee-arc-light/wiki/Web-Application-Properties\" target=\"_blank\">Web Application Properties</a> configuration examples based on use cases.",
       "type": "array",
       "items": {
         "type": "string"

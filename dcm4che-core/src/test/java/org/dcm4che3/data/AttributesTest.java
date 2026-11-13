@@ -38,100 +38,27 @@
 
 package org.dcm4che3.data;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+
 import org.dcm4che3.util.ByteUtils;
-import org.dcm4che3.util.DateUtils;
 import org.dcm4che3.util.StringUtils;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Date;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * @author Gunter Zeilinger (gunterze@protonmail.com)
  *
  */
 public class AttributesTest {
-
-    /**
-     * Test method for {@link org.dcm4che3.data.Attributes#getDate(long, java.util.Date)}.
-     */
-    @Test
-    public void testGetDateLongDate() {
-        Attributes a = new Attributes();
-        a.setString(Tag.StudyDate, VR.DA, "20110404");
-        a.setString(Tag.StudyTime, VR.TM, "15");
-        Date d = a.getDate(Tag.StudyDateAndTime);
-        assertEquals("20110404150000.000", DateUtils.formatDT(null, d));
-    }
-
-    /**
-     * Test method for {@link org.dcm4che3.data.Attributes#getDateRange(int, org.dcm4che3.data.DateRange)}.
-     */
-    @Test
-    public void testGetDateRangeIntDateRange() {
-        Attributes a = new Attributes();
-        a.setString(Tag.StudyDate, VR.DA, "20110404-20110405");
-        DateRange range = a.getDateRange(Tag.StudyDate, null);
-        assertEquals("20110404000000.000",
-                DateUtils.formatDT(null, range.getStartDate()));
-        assertEquals("20110405235959.999",
-                DateUtils.formatDT(null, range.getEndDate()));
-    }
-
-    /**
-     * Test method for {@link org.dcm4che3.data.Attributes#getDateRange(long, org.dcm4che3.data.DateRange)}.
-     */
-    @Test
-    public void testGetDateRangeLongDateRange() {
-        Attributes a = new Attributes();
-        a.setString(Tag.StudyDate, VR.DA, "20110404");
-        a.setString(Tag.StudyTime, VR.TM, "15-20");
-        DateRange range = a.getDateRange(Tag.StudyDateAndTime, null);
-        assertEquals("20110404150000.000",
-                DateUtils.formatDT(null, range.getStartDate()));
-        assertEquals("20110404205959.999",
-                DateUtils.formatDT(null, range.getEndDate()));
-    }
-
-    /**
-     * Test method for {@link org.dcm4che3.data.Attributes#setDate(long, java.util.Date)}.
-     */
-    @Test
-    public void testSetDateLongDate() {
-        Attributes a = new Attributes();
-        a.setDate(Tag.StudyDateAndTime,
-                DateUtils.parseDT(null, "20110404150000.000", new DatePrecision()));
-        assertEquals("20110404", a.getString(Tag.StudyDate, null));
-        assertEquals("150000.000", a.getString(Tag.StudyTime, null));
-    }
-
-    /**
-     * Test method for {@link org.dcm4che3.data.Attributes#setDateRange(int, org.dcm4che3.data.VR, org.dcm4che3.data.DateRange)}.
-     */
-    @Test
-    public void testSetDateRangeIntVRDateRange() {
-        Attributes a = new Attributes();
-        Date lower = DateUtils.parseDA(null, "20110404");
-        Date upper = DateUtils.parseDA(null, "20110405");
-        a.setDateRange(Tag.StudyDate, VR.DA, new DateRange(lower, upper));
-        assertEquals("20110404-20110405", a.getString(Tag.StudyDate, null));
-    }
-
-    /**
-     * Test method for {@link org.dcm4che3.data.Attributes#setDateRange(long, org.dcm4che3.data.DateRange)}.
-     */
-    @Test
-    public void testSetDateRangeLongDateRange() {
-        Attributes a = new Attributes();
-        Date lower = DateUtils.parseDT(null, "2011040415", new DatePrecision());
-        a.setDateRange(Tag.StudyDateAndTime, new DateRange(lower, null));
-        assertEquals("20110404-", a.getString(Tag.StudyDate, null));
-        assertEquals("150000.000-", a.getString(Tag.StudyTime, null));
-    }
 
     @Test
     public void testCreatorTagOf() {
@@ -279,49 +206,6 @@ public class AttributesTest {
         }
     }
 
-    /*
-        @Test
-        public void testSetTimezoneOffsetFromUTC() throws Exception {
-            Attributes a = new Attributes();
-            a.setDefaultTimeZone(DateUtils.timeZone("+0000"));
-            a.setDate(Tag.StudyDateAndTime, new Date(0));
-            a.setString(Tag.PatientBirthDate, VR.DA, "19700101");
-            a.setString(Tag.PatientBirthTime, VR.TM, "000000.000");
-            a.setString(Tag.ContextGroupVersion, VR.DT, "19700101");
-            assertEquals("19700101", a.getString(Tag.StudyDate));
-            assertEquals("000000.000", a.getString(Tag.StudyTime));
-
-            a.setTimezoneOffsetFromUTC("+0100");
-            assertEquals("19700101", a.getString(Tag.StudyDate));
-            assertEquals("010000.000", a.getString(Tag.StudyTime));
-            assertEquals("19700101", a.getString(Tag.PatientBirthDate));
-            assertEquals("000000.000", a.getString(Tag.PatientBirthTime));
-            assertEquals("19700101", a.getString(Tag.ContextGroupVersion));
-
-            a.setTimezoneOffsetFromUTC("-0100");
-            assertEquals("19691231", a.getString(Tag.StudyDate));
-            assertEquals("230000.000", a.getString(Tag.StudyTime));
-            assertEquals("19700101", a.getString(Tag.PatientBirthDate));
-            assertEquals("000000.000", a.getString(Tag.PatientBirthTime));
-            assertEquals("19700101", a.getString(Tag.ContextGroupVersion));
-        }
-
-        @Test
-        public void testDateRangeSetTimezoneOffsetFromUTC() throws Exception {
-            Attributes a = new Attributes();
-            a.setDefaultTimeZone(DateUtils.timeZone("+0000"));
-            a.setDateRange(Tag.StudyDateAndTime,
-                    new DateRange(new Date(0), new Date(3600000 * 12)));
-            assertEquals("19700101", a.getString(Tag.StudyDate));
-            assertEquals("000000.000-120000.000", a.getString(Tag.StudyTime));
-            a.setTimezoneOffsetFromUTC("-0100");
-            assertEquals("19691231-19700101", a.getString(Tag.StudyDate));
-            assertEquals("230000.000-110000.000", a.getString(Tag.StudyTime));
-            a.setTimezoneOffsetFromUTC("+0100");
-            assertEquals("19700101", a.getString(Tag.StudyDate));
-            assertEquals("010000.000-130000.000", a.getString(Tag.StudyTime));
-        }
-    */
     @Test
     public void testGetModified() {
         Attributes original = createOriginal();
@@ -803,6 +687,70 @@ public class AttributesTest {
     }
 
     @Test
+    public void testAddCompatibleCharacterSet3() throws IOException {
+        Attributes a = new Attributes();
+        a.setString(Tag.SpecificCharacterSet, VR.CS, "ISO_IR 100");
+        a.setBytes(Tag.PatientName, VR.PN, "Äneas^Rüdiger".getBytes(StandardCharsets.ISO_8859_1));
+        Attributes b = new Attributes();
+        b.setString(Tag.SpecificCharacterSet, VR.CS, "ISO_IR 192");
+        b.addSelected(a, Tag.PatientName);
+        assertArrayEquals("Äneas^Rüdiger".getBytes(StandardCharsets.UTF_8), b.getBytes(Tag.PatientName));
+    }
+
+    @Test
+    public void testAddCompatibleCharacterSet4() throws IOException {
+        Attributes a = new Attributes();
+        a.setString(Tag.SpecificCharacterSet, VR.CS, "ISO_IR 192");
+        a.setString(Tag.PatientSex, VR.CS, "M");
+        Attributes b = new Attributes();
+        b.setString(Tag.SpecificCharacterSet, VR.CS, "ISO_IR 100");
+        b.setBytes(Tag.PatientName, VR.PN, "Äneas^Rüdiger".getBytes(StandardCharsets.ISO_8859_1));
+        b.addAll(a);
+        assertArrayEquals("Äneas^Rüdiger".getBytes(StandardCharsets.UTF_8), b.getBytes(Tag.PatientName));
+    }
+
+    @Test
+    public void testAddCompatibleCharacterSet5() throws IOException {
+        Attributes a = new Attributes();
+        a.setString(Tag.SpecificCharacterSet, VR.CS, "ISO_IR 100");
+        a.setBytes(Tag.PatientName, VR.PN, "Äneas^Rüdiger".getBytes(StandardCharsets.ISO_8859_1));
+        Attributes b = new Attributes();
+        b.setString(Tag.SpecificCharacterSet, VR.CS, "ISO_IR 192");
+        b.addSelected(a, null, Tag.PatientName);
+        assertArrayEquals("Äneas^Rüdiger".getBytes(StandardCharsets.UTF_8), b.getBytes(Tag.PatientName));
+    }
+
+    @Test
+    public void testAddShouldCorrectlyDecodeStrings() {
+        Attributes aLeft = new Attributes();
+        aLeft.setSpecificCharacterSet("ISO_IR 192");
+
+        Attributes aRight = new Attributes();
+        aRight.setSpecificCharacterSet("ISO_IR 100");
+        byte[] studyid = new byte[] {0x33, 0x33, 0x34, 0x31, 0x34, 0x20};
+        aRight.setBytes(Tag.StudyID, VR.SH, studyid);
+
+        aLeft.addNotSelected(aRight, Tag.SpecificCharacterSet);
+
+        assertEquals("Padding space should be removed", "33414", aLeft.getString(Tag.StudyID));
+    }
+
+    @Test
+    public void testAddSelectedShouldCorrectlyDecodeStrings() {
+        Attributes aLeft = new Attributes();
+        aLeft.setSpecificCharacterSet("ISO_IR 192");
+
+        Attributes aRight = new Attributes();
+        aRight.setSpecificCharacterSet("ISO_IR 100");
+        byte[] studyid = new byte[] {0x33, 0x33, 0x34, 0x31, 0x34, 0x20};
+        aRight.setBytes(Tag.StudyID, VR.SH, studyid);
+
+        aLeft.addSelected(aRight, null, Tag.StudyID);
+
+        assertEquals("Padding space should be removed", "33414", aLeft.getString(Tag.StudyID));
+    }
+
+    @Test
     public void testGetValuePrivateCreatorSh() {
         Attributes dataset = new Attributes();
 
@@ -861,5 +809,45 @@ public class AttributesTest {
         assertTrue(originalAttributes.bigEndian());
         assertTrue(modifiedAttributes.bigEndian());
         assertArrayEquals(modifiedAttributes.getBytes(Tag.PixelRepresentation), new byte[]{0,1});
+    }
+
+    @Test
+    public void testThatNoExceptionWhenPublicTagsAfterPrivateCreators() {
+        Attributes attributes = new Attributes();
+        attributes.setString("MyCreator", 0x00290018, VR.LO, "foo");
+
+        Attributes toAdd = new Attributes();
+        toAdd.setString("MyCreator2", 0x00290018, VR.LO, "bar");
+        toAdd.setString(Tag.PerformedProcedureStepDescription, VR.LO, "CTABD  Abdomen");
+
+        attributes.addAll(toAdd);
+
+        assertEquals(5, attributes.size());
+    }
+
+    @Test
+    public void setString_GivenAttributeWithOBVR_SetsAttributeSuccessfully() throws IOException {
+        Attributes attributes = new Attributes();
+        attributes.setString(Tag.FileMetaInformationVersion, VR.OB, "00", "01");
+        byte[] expected = {0, 1};
+        byte[] actual = attributes.getBytes(Tag.FileMetaInformationVersion);
+        assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    public void addSelected_GivenNonConsecutivePrivateTags_ShouldKeepSelectedPrivateTags() {
+        Attributes original = new Attributes();
+        original.setString("PrivateCreatorA", 0x00991001, VR.LO, "0099xx01A");
+        original.setString("PrivateCreatorB", 0x00991101, VR.LO, "0099xx01B");
+        original.setString("PrivateCreatorC", 0x00991201, VR.LO, "0099xx01C");
+        Attributes selection = new Attributes();
+        selection.setNull("PrivateCreatorA", 0x00991001, VR.LO);
+        selection.setNull("PrivateCreatorC", 0x00991201, VR.LO);
+        Attributes filtered = new Attributes();
+        filtered.addSelected(original, selection);
+        assertTrue("Attributes should keep the element tag for PrivateCreatorA",
+                filtered.contains(0x00991001));
+        assertTrue("Attributes should keep the element tag for PrivateCreatorC",
+                filtered.contains(0x00991201));
     }
 }

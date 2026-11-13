@@ -46,7 +46,7 @@
   <parent>
     <artifactId>dcm4che-parent</artifactId>
     <groupId>org.dcm4che</groupId>
-    <version>5.25.0</version>
+    <version>5.36.0</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -69,23 +69,6 @@
       <artifactId>jbossws-cxf-client</artifactId>
       <scope>provided</scope>
     </dependency>
-    <dependency>
-      <groupId>org.apache.cxf</groupId>
-      <artifactId>cxf-rt-frontend-simple</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>gnu.getopt</groupId>
-      <artifactId>java-getopt</artifactId>
-      <version>1.0.13</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>1.2.17</version>
-      <scope>provided</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -101,7 +84,6 @@
         <configuration>
           <extension>true</extension>
           <verbose>true</verbose>
-          <target>2.2</target>
           <endpointClass/>
           <!-- some JDK implementations forbid file access for external schema,
                see http://docs.oracle.com/javase/8/docs/api/javax/xml/XMLConstants.html#ACCESS_EXTERNAL_SCHEMA -->

@@ -44,6 +44,7 @@ set CP=%DCM4CHE_HOME%\etc\storescu\
 set CP=%CP%;%DCM4CHE_HOME%\etc\certs\
 set CP=%CP%;%DCM4CHE_HOME%\lib\%MAIN_JAR%
 set CP=%CP%;%DCM4CHE_HOME%\lib\dcm4che-core-${project.version}.jar
+set CP=%CP%;%DCM4CHE_HOME%\lib\dcm4che-dict-priv-${project.version}.jar
 set CP=%CP%;%DCM4CHE_HOME%\lib\dcm4che-net-${project.version}.jar
 set CP=%CP%;%DCM4CHE_HOME%\lib\dcm4che-image-${project.version}.jar
 set CP=%CP%;%DCM4CHE_HOME%\lib\dcm4che-imageio-${project.version}.jar
@@ -69,8 +70,5 @@ if not "%IMAGE_READER_FACTORY%" == "" ^
 
 if not "%IMAGE_WRITER_FACTORY%" == "" ^
  set JAVA_OPTS=%JAVA_OPTS% -Dorg.dcm4che3.imageio.codec.ImageWriterFactory=%IMAGE_WRITER_FACTORY%
-
-rem Required from JDK 16 with legacy image API (Decompressor and Compressor)
-set JAVA_OPTS=%JAVA_OPTS% -XX:+IgnoreUnrecognizedVMOptions --add-opens=java.desktop/javax.imageio.stream=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED
 
 "%JAVA%" %JAVA_OPTS% -cp "%CP%" %MAIN_CLASS% %ARGS%

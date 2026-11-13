@@ -13,16 +13,12 @@ Options:
     --accept-timeout <ms>                 timeout in ms for receiving
                                           A-ASSOCIATE-AC, no timeout by
                                           default
- -b,--bind <aet[@ip][:port]>              specify AE Title, local address
+ -b,--bind <aet[@ip]>                     specify AE Title, local address
                                           of the Application Entity
                                           provided by this application;
                                           use STORESCU and pick up any
                                           valid local address to bind the
-                                          socket by default. If also a
-                                          port is specified, the
-                                          Application Entity will
-                                          listening for incoming
-                                          association requests on it.
+                                          socket by default.
  -c,--connect <aet@host:port>             specify AE Title, remote address
                                           and port of the remote
                                           Application Entity.
@@ -66,6 +62,20 @@ Options:
                                           peer AE communicated during
                                           association establishment. 16378
                                           by default
+    --no-evrle                            indicates to do NOT offer a
+                                          Presentation Context with
+                                          Transfer Syntax Explicit VR
+                                          Little Endian
+                                          (1.2.840.10008.1.2.1) for
+                                          sending DICOM files stored with
+                                          a different Transfer Syntax.
+    --no-ivrle                            indicates to do NOT offer a
+                                          Presentation Context with
+                                          Transfer Syntax Implicit VR
+                                          Little Endian
+                                          (1.2.840.10008.1.2) for sending
+                                          DICOM files stored with a
+                                          different Transfer Syntax.
     --not-async                           do not use asynchronous mode;
                                           equivalent to
                                           --max-ops-invoked=1 and
@@ -182,6 +192,12 @@ Options:
                                           specified Cipher Suite. Multiple
                                           Cipher Suites may be enabled by
                                           multiple --tls-cipher options
+    --tls-eia-https                       enable server endpoint
+                                          identification according RFC
+                                          2818: HTTP Over TLS
+    --tls-eia-ldaps                       enable server endpoint
+                                          identification according RFC
+                                          2830: LDAP Extension for TLS
     --tls-noauth                          disable client authentification
                                           for TLS
     --tls-null                            enable TLS connection without

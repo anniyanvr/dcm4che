@@ -43,6 +43,7 @@ set JAVA=%JAVA_HOME%\bin\java
 set CP=%DCM4CHE_HOME%\etc\stowrs\
 set CP=%CP%;%DCM4CHE_HOME%\lib\%MAIN_JAR%
 set CP=%CP%;%DCM4CHE_HOME%\lib\dcm4che-core-${project.version}.jar
+set CP=%CP%;%DCM4CHE_HOME%\lib\dcm4che-dict-priv-${project.version}.jar
 set CP=%CP%;%DCM4CHE_HOME%\lib\dcm4che-net-${project.version}.jar
 set CP=%CP%;%DCM4CHE_HOME%\lib\dcm4che-imageio-${project.version}.jar
 set CP=%CP%;%DCM4CHE_HOME%\lib\dcm4che-json-${project.version}.jar
@@ -51,6 +52,7 @@ set CP=%CP%;%DCM4CHE_HOME%\lib\slf4j-api-${slf4j.version}.jar
 set CP=%CP%;%DCM4CHE_HOME%\lib\logback-core-${logback.version}.jar
 set CP=%CP%;%DCM4CHE_HOME%\lib\logback-classic-${logback.version}.jar
 set CP=%CP%;%DCM4CHE_HOME%\lib\commons-cli-${commons-cli.version}.jar
-set CP=%CP%;%DCM4CHE_HOME%\lib\jakarta.json-${jakarta.json.version}.jar
+set CP=%CP%;%DCM4CHE_HOME%\lib\jakarta.json-api-${jakarta.json.version}.jar
+set CP=%CP%;%DCM4CHE_HOME%\lib\parsson-${org.eclipse.parsson.version}.jar
 
 "%JAVA%" %JAVA_OPTS% -cp "%CP%" %MAIN_CLASS% %ARGS%

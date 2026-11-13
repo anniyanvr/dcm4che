@@ -92,10 +92,17 @@ public enum PhotometricInterpretation {
                     return YBR_FULL;
                 case UID.JPEG2000Lossless:
                 case UID.JPEG2000MCLossless:
+                case UID.HTJ2KLossless:
+                case UID.HTJ2KLosslessRPCL:
                     return YBR_RCT;
                 case UID.JPEG2000:
                 case UID.JPEG2000MC:
+                case UID.HTJ2K:
                     return YBR_ICT;
+                case UID.JPEGXL:
+                case UID.JPEGXLLossless:
+                case UID.JPEGXLJPEGRecompression:
+                    return XYB;
             }
             return this;
         }
@@ -172,6 +179,12 @@ public enum PhotometricInterpretation {
         public ColorModel createColorModel(int bits, int dataType, ColorSpace cspace, Attributes ds) {
             throw new UnsupportedOperationException();
         }
+    },
+    XYB(false, false, true, false) {
+        @Override
+        public ColorModel createColorModel(int bits, int dataType, ColorSpace cspace, Attributes ds) {
+            throw new UnsupportedOperationException();
+        }
     };
 
     private final boolean monochrome;
@@ -221,7 +234,7 @@ public enum PhotometricInterpretation {
         int[] indicies = new int[samples];
         for (int i = 1; i < samples; i++)
             indicies[i] = i;
-        return banded
+        return banded && samples > 1
                 ? new BandedSampleModel(dataType, w, h,  w, indicies, new int[samples])
                 : new PixelInterleavedSampleModel(dataType, w, h, samples, w * samples, indicies);
     }

@@ -46,12 +46,17 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.Tag;
 import org.dcm4che3.data.UID;
+import org.dcm4che3.data.VR;
 import org.dcm4che3.imageio.codec.jpeg.JPEGParser;
 import org.dcm4che3.io.DicomInputStream;
+import org.dcm4che3.util.UIDUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -185,6 +190,30 @@ public class TranscoderTest {
         assertEquals(1, jpegPixelRepresentation("test16signed-J2KI.dcm"));
     }
 
+    @Test
+      public void testJxlToJpeg() throws Exception {
+      test("will-jxl.dcm", "test-jpeg.dcm", UID.JPEGBaseline8Bit, true);
+      assertEquals(8, jpegBitsPerSample("test-jpeg.dcm"));
+    }
+
+    @Test
+    public void testConvertToJxlLossless() throws Exception {
+      test("test16signed.dcm", "test-signed-jxl-lossless.dcm", UID.JPEGXLLossless, true);
+      test("jpeg-ls-Palette.dcm", "jpeg-ls-Palette-jxl-lossless.dcm", UID.JPEGXLLossless, true);
+    }
+
+    @Test
+    public void testConvertToJxlLossy() throws Exception {
+      test("test16signed.dcm", "test-signed-jxl.dcm", UID.JPEGXL, true);
+      test("YBR_422.dcm", "YBR_422-jxl.dcm", UID.JPEGXL, true);
+    }
+
+    @Test
+    public void testConvertToJxlLossyJpegRecompression() throws Exception {
+      test("test16signed.dcm", "test-signed-jxl-recompression.dcm", UID.JPEGXLJPEGRecompression, true);
+      test("YBR_422.dcm", "YBR_422-jxl-recompression.dcm", UID.JPEGXLJPEGRecompression, true);
+    }
+
     private int jpegBitsPerSample(String ofname) throws IOException {
         final File ofile = new File("target/test-out/" + ofname);
         long jpegPos = jpegPos(ofile);
@@ -217,6 +246,8 @@ public class TranscoderTest {
         Transcoder.Handler handler = new Transcoder.Handler() {
             @Override
             public OutputStream newOutputStream(Transcoder transcoder, Attributes dataset) throws IOException {
+                dataset.setString(Tag.SeriesInstanceUID, VR.UI, UIDUtils.createUID());
+                dataset.setString(Tag.SOPInstanceUID, VR.UI, UIDUtils.createUID());
                 return new FileOutputStream(ofile);
             }
         };
@@ -227,4 +258,31 @@ public class TranscoderTest {
             transcoder.transcode(handler);
         }
     }
+
+    @Test
+    public void testTranscodeFileMultipleTimes() throws Exception {
+        test("MR-JPEGLosslessSV1.dcm", UID.JPEGLSLossless, UID.JPEGLosslessSV1);
+        test("CT-JPEGLosslessSV1.dcm", UID.ExplicitVRLittleEndian, UID.JPEGLSLossless, UID.JPEGLosslessSV1);
+    }
+
+    private void test(String srcFileName, String... transferSyntaxList) throws Exception {
+        String newSrcFileName = null;
+
+        for (int i = 0; i < transferSyntaxList.length; i++) {
+            String transferSyntax = transferSyntaxList[i];
+            String dstFileName = transferSyntax + ".dcm";
+
+            if (i == 0) {
+                test(srcFileName, dstFileName, transferSyntax, true);
+            } else {
+                test(newSrcFileName, dstFileName, transferSyntax, true);
+            }
+
+            Path source = Paths.get("target/test-out/", dstFileName);
+            Path target = Paths.get("target/test-data/", dstFileName);
+            Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+            newSrcFileName = dstFileName;
+        }
+    }
+
 }

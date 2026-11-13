@@ -40,6 +40,7 @@ fi
 CP="$DCM4CHE_HOME/etc/stowrs/"
 CP="$CP:$DCM4CHE_HOME/lib/$MAIN_JAR"
 CP="$CP:$DCM4CHE_HOME/lib/dcm4che-core-${project.version}.jar"
+CP="$CP:$DCM4CHE_HOME/lib/dcm4che-dict-priv-${project.version}.jar"
 CP="$CP:$DCM4CHE_HOME/lib/dcm4che-net-${project.version}.jar"
 CP="$CP:$DCM4CHE_HOME/lib/dcm4che-json-${project.version}.jar"
 CP="$CP:$DCM4CHE_HOME/lib/dcm4che-imageio-${project.version}.jar"
@@ -48,7 +49,8 @@ CP="$CP:$DCM4CHE_HOME/lib/slf4j-api-${slf4j.version}.jar"
 CP="$CP:$DCM4CHE_HOME/lib/logback-core-${logback.version}.jar"
 CP="$CP:$DCM4CHE_HOME/lib/logback-classic-${logback.version}.jar"
 CP="$CP:$DCM4CHE_HOME/lib/commons-cli-${commons-cli.version}.jar"
-CP="$CP:$DCM4CHE_HOME/lib/jakarta.json-${jakarta.json.version}.jar"
+CP="$CP:$DCM4CHE_HOME/lib/jakarta.json-api-${jakarta.json.version}.jar"
+CP="$CP:$DCM4CHE_HOME/lib/parsson-${org.eclipse.parsson.version}.jar"
 
 # For Cygwin, switch paths to Windows format before running java
 if $cygwin; then

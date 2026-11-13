@@ -18,16 +18,12 @@ Options:
     --accept-timeout <ms>                 timeout in ms for receiving
                                           A-ASSOCIATE-AC, no timeout by
                                           default
- -b,--bind <aet[@ip][:port]>              specify AE Title, local address
+ -b,--bind <aet[@ip]>                     specify AE Title, local address
                                           of the Application Entity
                                           provided by this application;
                                           use FINDSCU and pick up any
                                           valid local address to bind the
-                                          socket by default. If also a
-                                          port is specified, the
-                                          Application Entity will
-                                          listening for incoming
-                                          association requests on it.
+                                          socket by default.
     --big-endian                          propose all uncompressed TS,
                                           explicit VR big endian first
                                           (default: implicit VR little
@@ -221,6 +217,12 @@ Options:
                                           specified Cipher Suite. Multiple
                                           Cipher Suites may be enabled by
                                           multiple --tls-cipher options
+    --tls-eia-https                       enable server endpoint
+                                          identification according RFC
+                                          2818: HTTP Over TLS
+    --tls-eia-ldaps                       enable server endpoint
+                                          identification according RFC
+                                          2830: LDAP Extension for TLS
     --tls-noauth                          disable client authentification
                                           for TLS
     --tls-null                            enable TLS connection without

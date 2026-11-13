@@ -155,25 +155,9 @@
     </dependencySet>
     <dependencySet>
       <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
-      <outputDirectory>/modules/org/dcm4che/imageio/main/lib/linux-i686</outputDirectory>
-      <includes>
-        <include>*:*:so:linux-x86:*</include>
-      </includes>
-      <useProjectArtifact>false</useProjectArtifact>
-    </dependencySet>
-    <dependencySet>
-      <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
       <outputDirectory>/modules/org/dcm4che/imageio/main/lib/linux-x86_64</outputDirectory>
       <includes>
         <include>*:*:so:linux-x86-64:*</include>
-      </includes>
-      <useProjectArtifact>false</useProjectArtifact>
-    </dependencySet>
-    <dependencySet>
-      <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
-      <outputDirectory>/modules/org/dcm4che/imageio/main/lib/linux-armv7a</outputDirectory>
-      <includes>
-        <include>*:*:so:linux-armv7a:*</include>
       </includes>
       <useProjectArtifact>false</useProjectArtifact>
     </dependencySet>
@@ -189,15 +173,15 @@
       <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
       <outputDirectory>/modules/org/dcm4che/imageio/main/lib/macosx-x86_64</outputDirectory>
       <includes>
-        <include>*:*:jnilib:macosx-x86-64:*</include>
+        <include>*:*:dylib:macosx-x86-64:*</include>
       </includes>
       <useProjectArtifact>false</useProjectArtifact>
     </dependencySet>
     <dependencySet>
       <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
-      <outputDirectory>/modules/org/dcm4che/imageio/main/lib/win-i686</outputDirectory>
+      <outputDirectory>/modules/org/dcm4che/imageio/main/lib/macosx-aarch64</outputDirectory>
       <includes>
-        <include>*:*:dll:windows-x86:*</include>
+        <include>*:*:dylib:macosx-aarch64:*</include>
       </includes>
       <useProjectArtifact>false</useProjectArtifact>
     </dependencySet>
@@ -266,6 +250,14 @@
       <useProjectArtifact>false</useProjectArtifact>
     </dependencySet>
     <dependencySet>
+      <outputDirectory>/modules/org/dcm4che/qstar/main</outputDirectory>
+      <includes>
+        <include>org.dcm4che:dcm4che-qstar</include>
+      </includes>
+      <useTransitiveDependencies>false</useTransitiveDependencies>
+      <useProjectArtifact>false</useProjectArtifact>
+    </dependencySet>
+    <dependencySet>
       <outputDirectory>/modules/org/dcm4che/soundex/main</outputDirectory>
       <includes>
         <include>org.dcm4che:dcm4che-soundex</include>
@@ -290,9 +282,33 @@
       <useProjectArtifact>false</useProjectArtifact>
     </dependencySet>
     <dependencySet>
+      <outputDirectory>/modules/org/dcm4che/xroad/main</outputDirectory>
+      <includes>
+        <include>org.dcm4che:dcm4che-xroad</include>
+      </includes>
+      <useTransitiveDependencies>false</useTransitiveDependencies>
+      <useProjectArtifact>false</useProjectArtifact>
+    </dependencySet>
+    <dependencySet>
       <outputDirectory>/modules/org/keycloak/admin-client/main</outputDirectory>
       <includes>
         <include>org.keycloak:keycloak-admin-client</include>
+      </includes>
+      <useTransitiveDependencies>false</useTransitiveDependencies>
+      <useProjectArtifact>false</useProjectArtifact>
+    </dependencySet>
+    <dependencySet>
+      <outputDirectory>/modules/org/keycloak/keycloak-common/main</outputDirectory>
+      <includes>
+        <include>org.keycloak:keycloak-common</include>
+      </includes>
+      <useTransitiveDependencies>false</useTransitiveDependencies>
+      <useProjectArtifact>false</useProjectArtifact>
+    </dependencySet>
+    <dependencySet>
+      <outputDirectory>/modules/org/keycloak/keycloak-core/main</outputDirectory>
+      <includes>
+        <include>org.keycloak:keycloak-core</include>
       </includes>
       <useTransitiveDependencies>false</useTransitiveDependencies>
       <useProjectArtifact>false</useProjectArtifact>

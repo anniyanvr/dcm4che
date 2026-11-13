@@ -39,6 +39,7 @@
 package org.dcm4che3.data;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import org.dcm4che3.util.StringUtils;
 
@@ -151,7 +152,7 @@ public class Issuer implements Serializable {
     }
 
     public boolean merge(Issuer other) {
-        if (!matches(other))
+        if (!matches(other, true, true))
             throw new IllegalArgumentException("other=" + other);
 
         boolean mergeLocalNamespace;
@@ -187,30 +188,37 @@ public class Issuer implements Serializable {
         if (!(o instanceof Issuer))
             return false;
         Issuer other = (Issuer) o;
-        return equals(localNamespaceEntityID, other.localNamespaceEntityID)
-                && equals(universalEntityID, other.universalEntityID)
-                && equals(universalEntityIDType, other.universalEntityIDType);
+        return equals(localNamespaceEntityID, other.getLocalNamespaceEntityID())
+                && equals(universalEntityID, other.getUniversalEntityID())
+                && equals(universalEntityIDType, other.getUniversalEntityIDType());
     }
 
     private boolean equals(String s1, String s2) {
-        return s1 == s2 || s1 != null && s1.equals(s2);
+        return Objects.equals(s1, s2);
     }
 
     public boolean matches(Issuer other) {
-        if (this == other || other == null)
+        return matches(other, true, false);
+    }
+
+    public boolean matches(Issuer other, boolean matchNoIssuer, boolean matchOnNoMismatch) {
+        if (this == other)
             return true;
 
-        boolean matchLocal = localNamespaceEntityID != null
-                && other.localNamespaceEntityID != null;
-        boolean matchUniversal = universalEntityID != null
-                && other.universalEntityID != null;
+        if (other == null)
+            return matchNoIssuer;
 
-        return (matchLocal || matchUniversal)
-            && (!matchLocal
-                || localNamespaceEntityID.equals(other.localNamespaceEntityID))
+        boolean matchLocal = localNamespaceEntityID != null
+                && other.getLocalNamespaceEntityID() != null;
+        boolean matchUniversal = universalEntityID != null
+                && other.getUniversalEntityID() != null;
+
+        return !matchLocal && !matchUniversal ? matchOnNoMismatch
+            : (!matchLocal
+                || localNamespaceEntityID.equals(other.getLocalNamespaceEntityID()))
             && (!matchUniversal
-                || universalEntityID.equals(other.universalEntityID)
-                && universalEntityIDType.equals(other.universalEntityIDType));
+                || universalEntityID.equals(other.getUniversalEntityID())
+                && universalEntityIDType.equals(other.getUniversalEntityIDType()));
     }
 
     @Override

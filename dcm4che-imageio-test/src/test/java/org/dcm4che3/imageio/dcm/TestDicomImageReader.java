@@ -54,7 +54,7 @@ import java.security.MessageDigest;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.FileImageInputStream;
 import javax.imageio.stream.ImageInputStream;
-import javax.xml.bind.annotation.adapters.HexBinaryAdapter;
+import jakarta.xml.bind.annotation.adapters.HexBinaryAdapter;
 
 import org.assertj.core.api.Fail;
 import org.dcm4che3.data.Attributes;
@@ -226,11 +226,11 @@ public class TestDicomImageReader {
         DicomImageReader.generateOffsetLengths(pixelDataFragments, offsets.length, basicOffsetTable, longOffsets[0]);
         assertThat(pixelDataFragments).hasSize(offsets.length)
         .contains(
-                new BulkData("compressedPixelData://",longOffsets[0]+8,(int) (longOffsets[1]-longOffsets[0]-8),false),
-                new BulkData("compressedPixelData://",longOffsets[1]+8,(int) (longOffsets[2]-longOffsets[1]-8),false),
-                new BulkData("compressedPixelData://",longOffsets[2]+8,(int) (longOffsets[3]-longOffsets[2]-8),false),
-                new BulkData("compressedPixelData://",longOffsets[3]+8,(int) (longOffsets[4]-longOffsets[3]-8),false),
-                new BulkData("compressedPixelData://",longOffsets[4]+8,(int) (longOffsets[5]-longOffsets[4]-8),false),
+                new BulkData("compressedPixelData://",longOffsets[0]+8, longOffsets[1]-longOffsets[0]-8,false),
+                new BulkData("compressedPixelData://",longOffsets[1]+8, longOffsets[2]-longOffsets[1]-8,false),
+                new BulkData("compressedPixelData://",longOffsets[2]+8, longOffsets[3]-longOffsets[2]-8,false),
+                new BulkData("compressedPixelData://",longOffsets[3]+8, longOffsets[4]-longOffsets[3]-8,false),
+                new BulkData("compressedPixelData://",longOffsets[4]+8, longOffsets[5]-longOffsets[4]-8,false),
                 new BulkData("compressedPixelData://",longOffsets[5]+8,-1,false),
                 new BulkData("compressedPixelData://", -1, -1, false),
                 new BulkData("compressedPixelData://", -1, -1, false));

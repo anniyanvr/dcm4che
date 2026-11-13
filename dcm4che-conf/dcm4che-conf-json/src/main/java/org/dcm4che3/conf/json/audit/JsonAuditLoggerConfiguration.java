@@ -40,7 +40,7 @@
 
 package org.dcm4che3.conf.json.audit;
 
-
+import jakarta.json.stream.JsonParser;
 import org.dcm4che3.audit.AuditMessages;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.json.ConfigurationDelegate;
@@ -55,8 +55,6 @@ import org.dcm4che3.net.audit.AuditSuppressCriteria;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.json.stream.JsonParser;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -257,11 +255,11 @@ public class JsonAuditLoggerConfiguration extends JsonConfigurationExtension {
     }
 
     private void loadAuditSuppressCriteriaListFrom(AuditLogger logger, JsonReader reader) {
-        AuditSuppressCriteria ct = new AuditSuppressCriteria("cn");
         reader.next();
         reader.expect(JsonParser.Event.START_ARRAY);
         while (reader.next() == JsonParser.Event.START_OBJECT) {
             reader.expect(JsonParser.Event.START_OBJECT);
+            AuditSuppressCriteria ct = new AuditSuppressCriteria("cn");
             while (reader.next() == JsonParser.Event.KEY_NAME) {
                 switch (reader.getString()) {
                     case "cn":
@@ -308,8 +306,8 @@ public class JsonAuditLoggerConfiguration extends JsonConfigurationExtension {
                 }
             }
             reader.expect(JsonParser.Event.END_OBJECT);
+            logger.addAuditSuppressCriteria(ct);
         }
         reader.expect(JsonParser.Event.END_ARRAY);
-        logger.setAuditSuppressCriteriaList(Collections.singletonList(ct));
     }
 }

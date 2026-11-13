@@ -38,8 +38,7 @@
 
 package org.dcm4che3.ws.rs;
 
-import javax.ws.rs.core.MediaType;
-
+import jakarta.ws.rs.core.MediaType;
 import org.dcm4che3.data.UID;
 
 import java.util.Collections;
@@ -84,6 +83,28 @@ public class MediaTypes {
      */
     public final static MediaType APPLICATION_DICOM_JSON_TYPE =
             new MediaType("application", "dicom+json");
+
+    /**
+     * "application/fhir+xml"
+     */
+    public final static String APPLICATION_FHIR_XML = "application/fhir+xml";
+
+    /**
+     * "application/fhir+xml"
+     */
+    public final static MediaType APPLICATION_FHIR_XML_TYPE =
+            new MediaType("application", "fhir+xml");
+
+    /**
+     * "application/fhir+json"
+     */
+    public final static String APPLICATION_FHIR_JSON = "application/fhir+json";
+
+    /**
+     * "application/fhir+json"
+     */
+    public final static MediaType APPLICATION_FHIR_JSON_TYPE =
+            new MediaType("application", "fhir+json");
 
     /**
      * "image/*"
@@ -153,15 +174,48 @@ public class MediaTypes {
             new MediaType("image", "jp2");
 
     /**
+     * "image/j2c"
+     */
+    public final static String IMAGE_J2C = "image/j2c";
+
+    /**
+     * "image/j2c"
+     */
+    public final static MediaType IMAGE_J2C_TYPE =
+            new MediaType("image", "j2c");
+
+    /**
      * "image/jpx"
      */
     public final static String IMAGE_JPX = "image/jpx";
 
     /**
-     * "image/dicom+jpeg-jpx"
+     * "image/jpx"
      */
     public final static MediaType IMAGE_JPX_TYPE =
             new MediaType("image", "jpx");
+
+    /**
+     * "image/jph"
+     */
+    public final static String IMAGE_JPH = "image/jph";
+
+    /**
+     * "image/jph"
+     */
+    public final static MediaType IMAGE_JPH_TYPE =
+            new MediaType("image", "jph");
+
+    /**
+     * "image/jphc"
+     */
+    public final static String IMAGE_JPHC = "image/jphc";
+
+    /**
+     * "image/jphc"
+     */
+    public final static MediaType IMAGE_JPHC_TYPE =
+            new MediaType("image", "jphc");
 
     /**
      * "image/dicom-rle"
@@ -361,6 +415,39 @@ public class MediaTypes {
     public final static MediaType MODEL_MTL_TYPE =
             new MediaType("model", "mtl");
 
+    /**
+     * "application/vnd.genozip"
+     */
+    public final static String APPLICATION_VND_GENOZIP = "application/vnd.genozip";
+
+    /**
+     * "application/vnd.genozip"
+     */
+    public final static MediaType APPLICATION_VND_GENOZIP_TYPE =
+            new MediaType("application", "vnd.genozip");
+
+    /**
+     * "application/x-bzip2"
+     */
+    public final static String APPLICATION_X_BZIP2 = "application/x-bzip2";
+
+    /**
+     * "application/x-bzip2"
+     */
+    public final static MediaType APPLICATION_X_BZIP2_TYPE =
+            new MediaType("application", "x-bzip2");
+
+    /**
+     * "application/prs.vcfbzip2"
+     */
+    public final static String APPLICATION_PRS_VCFBZIP2 = "application/prs.vcfbzip2";
+
+    /**
+     * "application/prs.vcfbzip"
+     */
+    public final static MediaType APPLICATION_PRS_VCFBZIP2_TYPE =
+            new MediaType("application", "prs.vcfbzip2");
+
 
     public static MediaType forTransferSyntax(String ts) {
         MediaType type;
@@ -368,29 +455,30 @@ public class MediaTypes {
             case UID.ExplicitVRLittleEndian:
             case UID.ImplicitVRLittleEndian:
                 return MediaType.APPLICATION_OCTET_STREAM_TYPE;
-            case UID.JPEGLosslessSV1:
-                return IMAGE_JPEG_TYPE;
-            case UID.JPEGLSLossless:
-                return IMAGE_JLS_TYPE;
-            case UID.JPEG2000Lossless:
-                return IMAGE_JP2_TYPE;
-            case UID.JPEG2000MCLossless:
-                return IMAGE_JPX_TYPE;
             case UID.RLELossless:
                 return IMAGE_DICOM_RLE_TYPE;
             case UID.JPEGBaseline8Bit:
             case UID.JPEGExtended12Bit:
             case UID.JPEGLossless:
+            case UID.JPEGLosslessSV1:
                 type = IMAGE_JPEG_TYPE;
                 break;
+            case UID.JPEGLSLossless:
             case UID.JPEGLSNearLossless:
                 type = IMAGE_JLS_TYPE;
                 break;
+            case UID.JPEG2000Lossless:
             case UID.JPEG2000:
                 type = IMAGE_JP2_TYPE;
                 break;
+            case UID.JPEG2000MCLossless:
             case UID.JPEG2000MC:
                 type = IMAGE_JPX_TYPE;
+                break;
+            case UID.HTJ2KLossless:
+            case UID.HTJ2KLosslessRPCL:
+            case UID.HTJ2K:
+                type = IMAGE_JPHC_TYPE;
                 break;
             case UID.MPEG2MPML:
             case UID.MPEG2MPHL:
